@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+THING=$1
+
+aws iot create-thing --thing-name $THING > things/$THING.json
+
+aws iot create-keys-and-certificate --set-as-active > things/$THING.creds
+
+CERTARN=`cat things/$THING.creds | jq -r '.["certificateArn"]'`
+
+aws iot create-policy --policy-name $THING-policy --policy-document '{"Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": [ "iot:Publish", "iot:Subscribe", "iot:Connect", "iot:Receive" ], "Resource": [ "*" ] }]}' > things/$THING.policy
+
+aws iot attach-thing-principal --thing-name $THING --principal $CERTARN
+
+aws iot attach-policy --policy-name $THING-policy --target $CERTARN 
+
+CERT=`cat things/$THING.creds | jq -r '.["certificatePem"]'`
+PUBLIC=`cat things/$THING.creds | jq -r '.["keyPair"] | .["PublicKey"]'`
+PRIVATE=`cat things/$THING.creds | jq -r '.["keyPair"] | .["PrivateKey"]'`
+
+echo "$CERT" > certs/$THING.pem
+echo "$PUBLIC" > certs/$THING.pub
+echo "$PRIVATE" > certs/$THING.priv

@@ -1,0 +1,117 @@
+# vim: set ts=2 sw=2 et:
+# 
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# 
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT Policies and IAM Roles
+
+Resources:
+  IoTProvisioningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: IoTProvisioning
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service: "iot.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: ThingRegistrationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Effect: Allow
+                Action:
+                  - "iot:AddThingToThingGroup"
+                  - "iot:AttachPrincipalPolicy"
+                  - "iot:AttachThingPrincipal"
+                  - "iot:CreateCertificateFromCsr"
+                  - "iot:CreatePolicy"
+                  - "iot:CreateThing"
+                  - "iot:DescribeCertificate"
+                  - "iot:DescribeThing"
+                  - "iot:DescribeThingGroup"
+                  - "iot:DescribeThingType"
+                  - "iot:DetachThingPrincipal"
+                  - "iot:GetPolicy"
+                  - "iot:ListPolicyPrincipals"
+                  - "iot:ListPrincipalPolicies"
+                  - "iot:ListPrincipalThings"
+                  - "iot:ListThingGroupsForThing"
+                  - "iot:ListThingPrincipals"
+                  - "iot:RegisterCertificate"
+                  - "iot:RegisterThing"
+                  - "iot:RemoveThingFromThingGroup"
+                  - "iot:UpdateCertificate"
+                  - "iot:UpdateThing"
+                  - "iot:UpdateThingGroupsForThing"
+                Resource: "*"
+        -
+          PolicyName: ThingRegistrationLogginPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:PutMetricFilter"
+                  - "logs:PutRetentionPolicy"
+                  - "logs:GetLogEvents"
+                  - "logs:DeleteLogStream"
+                Resource: "*"  
+        -
+          PolicyName: ThingRegistrationRuleActionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "dynamodb:PutItem"
+                  - "kinesis:PutRecord"
+                  - "iot:Publish"
+                  - "s3:PutObject"
+                  - "sns:Publish"
+                  - "sqs:SendMessage*"
+                  - "cloudwatch:SetAlarmState"
+                  - "cloudwatch:PutMetricData"
+                  - "es:ESHttpPut"
+                  - "firehose:PutRecord"
+                Resource: "*"
+
+  IoTAccess:
+    Type: "AWS::IoT::Policy"
+    Properties:
+      PolicyName: IoTAccess
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - 
+            Sid: MQTTConnect
+            Action:
+              - "iot:Connect"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":client/${iot:Certificate.Subject.CommonName}"]] }
+          -
+            Sid: MQTTRead
+            Action:
+              - "iot:Subscribe"
+              - "iot:Receive"
+            Effect: Allow
+            Resource: "*"
+          - 
+            Sid: MQTTWrite
+            Action:
+              - "iot:Publish"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":topic/${iot:Certificate.Subject.CommonName}"]] }
+

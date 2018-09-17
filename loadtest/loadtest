@@ -1,0 +1,168 @@
+#!/usr/bin/env node
+
+//  Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+
+const aws = require('aws-iot-device-sdk')
+const { exec, spawn } = require('child_process')
+const { exit } = require('process')
+
+
+// set verbose reporting mode
+const verbose = process.argv.includes('-verbose') || process.argv.includes('-v')
+
+if (! process.env['AWS_IOT_ENDPOINT']) {
+	console.log('Please set the AWS_IOT_ENDPOINT')
+	console.log('For example:')
+	console.log('	export AWS_IOT_ENDPOINT=$(aws iot describe-endpoint | jq -r \'.["endpointAddress"]\')')
+	exit(0)
+}
+
+// runs a list of commands in a shell
+const run = function (cmd,...args) {
+	exec(cmd, (err,stdout,stderr) => {
+		if (err) { console.log(err) }
+		if (verbose) console.log(stderr)
+		if (verbose) console.log(stdout)
+		if (args.length) return run(...args)
+	})
+}
+
+const run_async = function(cmd,...args) {
+	var child = spawn(cmd,args)
+	child.stderr.on('data', (data) => {
+		console.log(data.toString())
+	})
+	child.stdout.on('data', (data) => {
+		console.log(data.toString())
+	})
+	child.on('close', (code) => {
+		console.log('child exited', code)
+	})
+}
+
+// sign x509 certificate for a device
+const certificate = function (device) {
+	run('openssl genrsa -out certs/' + device + '.key',
+		'openssl req -new -key certs/' + device + '.key -out certs/' + device + '.csr -subj "/C=ES/O=12345/CN=' + device + '"',
+		'openssl x509 -req -in certs/' + device + '.csr -CA root.ca.pem -CAkey root.ca.key -CAcreateserial -out certs/' + device + '.tmp -days 500 -sha256',
+		'cat certs/' + device + '.tmp root.ca.pem > certs/' + device + '.crt')
+}
+
+// create count devices
+const devices = function (type,count) {
+	var retval = []
+	for (var i = 0; i < count; ++i) {
+		var device = ''+ type + i
+		retval.push(device)	
+		certificate(device)
+	}
+	return retval
+}
+
+// create certificates for pubs publishers and subs subscribers 
+const setup = function(subs,pubs)  {
+	const subscribers = devices('sub',subs)
+	const publishers = devices('pub',pubs)
+	return { publishers: publishers, subscribers: subscribers }
+}
+
+// subscribe to a topic as a subscriber, and log each message received
+const subscriber = function(dev) {
+	if (verbose) console.log('Connecting as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
+
+	var device = aws.device({
+		keyPath: 'certs/' + dev+ '.key',
+		certPath: 'certs/' + dev+ '.crt',
+		caPath: 'aws.root.cert',
+		clientId: dev,
+		host: process.env['AWS_IOT_ENDPOINT']
+	})
+
+	device.on('connect', function() {
+		if (verbose) console.log('Connected as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
+		device.subscribe('loadtest/#')
+	})
+
+	device.on('message', function(topic, payload) {
+		if (verbose) console.log('message', topic, payload.toString());
+		var now = (new Date()).getTime()
+		var msg = JSON.parse(payload)
+		device.publish('loadtest', JSON.stringify({ publisher: msg.device, subscriber: dev, sent: msg.sent, ack: now.toString()}))
+	})
+}
+
+
+// publish a message every second
+const publisher = function(dev) {
+	if (verbose) console.log('Connecting as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
+	var device = aws.device({
+		keyPath: 'certs/' + dev+ '.key',
+		certPath: 'certs/' + dev+ '.crt',
+		caPath: 'aws.root.cert',
+		clientId: dev,
+		host: process.env['AWS_IOT_ENDPOINT']
+	})
+	
+	device.on('connect', () => {
+		if (verbose) console.log('Connected as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
+		var timer = setInterval( function() {
+			var now = (new Date()).getTime()
+			if (verbose) console.log(dev,'sending at',now)
+			device.publish('loadtest/' + dev, JSON.stringify({ device: dev, sent: now.toString()}))
+		}, 1000)
+	})
+}
+
+const loadtest = function(subs,pubs) {
+	var subscribers = []
+	for (var i = 0; i < subs; ++i) {
+		var device = 'sub'+ i
+		subscribers.push(device)	
+	}
+	var publishers = []
+	for (var i = 0; i < pubs; ++i) {
+		var device = 'pub'+ i
+		publishers.push(device)	
+	}
+
+	subscribers.map( (device) => {
+		run_async('./loadtest', '-subscriber', device)
+	})
+	publishers.map( (device) => {
+		run_async('./loadtest', '-publisher', device)
+	})
+}
+
+if (process.argv.includes('-setup')) {
+	var subs = ( process.argv.includes('-subscribers')) ? 
+		process.argv[ process.argv.indexOf('-subscribers') + 1]*1 :
+		process.env['SUBSCRIBERS']*1 || 1
+	var pubs =  ( process.argv.includes('-publishers')) ?
+		process.argv[ process.argv.indexOf('-publishers') + 1 ]*1 :
+		process.env['PUBLISHERS']*1 || 1
+	console.log('subs',subs,'pubs',pubs)
+	setup(subs,pubs)
+}
+
+else if (process.argv.includes('-subscriber')) {
+	subscriber( process.argv[ process.argv.indexOf('-subscriber') + 1 ])
+} 
+
+else if (process.argv.includes('-publisher')) {
+	publisher( process.argv[ process.argv.indexOf('-publisher') + 1 ])
+} 
+
+else if (process.argv.includes('-loadtest')) {
+	var subs = ( process.argv.includes('-subscribers')) ? 
+		process.argv[ process.argv.indexOf('-subscribers') + 1]*1 :
+		process.env['SUBSCRIBERS']*1 || 1
+	var pubs =  ( process.argv.includes('-publishers')) ?
+		process.argv[ process.argv.indexOf('-publishers') + 1 ]*1 :
+		process.env['PUBLISHERS']*1 || 1
+	loadtest(pubs,subs)
+}
+
+else {
+	console.log("Usage: ./loadtest [-loadtest #subscribers #publishers | -publisher deviceid |  -subscriber deviceid ]")
+}

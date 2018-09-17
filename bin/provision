@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+DEVICE=$1
+CA=${2:-root}
+
+if [[ ! -f "$CA.ca.pem" ]]; then
+	echo "Could not find certificate for $CA"
+	exit
+fi
+
+openssl genrsa -out "$DEVICE.key" 2048
+openssl req -new -key "$DEVICE.key" -out "$DEVICE.csr"  -subj "/C=LU/ST=LU/L=LU/O=AWS/OU=TEST/CN=$DEVICE"
+openssl x509 -req -in $DEVICE.csr -CA "$CA.ca.pem" -CAkey "$CA.ca.key" -CAcreateserial -out "$DEVICE.crt.tmp" -days 500 -sha256
+cat "$DEVICE.crt.tmp" "$CA.ca.pem" > "$DEVICE.crt"
+rm "$DEVICE.crt.tmp"
+rm "$DEVICE.csr"

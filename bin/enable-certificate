@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+CERTIFICATES=$(aws iot list-thing-principals --thing-name $1 | jq -r '.["principals"] | .[] | split("/") | .[1] ')
+
+for I in  $CERTIFICATES; do
+	aws iot update-certificate --certificate-id $I --new-status ACTIVE
+done
