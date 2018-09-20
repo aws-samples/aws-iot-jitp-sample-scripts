@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+THINGS=$(aws iot list-things | jq -r '.["things"] | .[] | .["thingName"]');
+
+for I in $THINGS; do
+	aws iot list-thing-principals --thing-name $I | jq -r ".[\"principals\"] | \"$I \(.[0])\""
+done
+		

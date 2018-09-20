@@ -1,0 +1,39 @@
+# vim: set ts=2 sw=2 et:
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# 
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT Policies and IAM Roles
+
+Resources:
+  IoTAccess:
+    Type: "AWS::IoT::Policy"
+    Properties:
+      PolicyName: LoadTestPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - 
+            Sid: MQTTConnect
+            Action:
+              - "iot:Connect"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":client/${iot:Certificate.Subject.CommonName}"]] }
+          -
+            Sid: MQTTPublisher
+            Action:
+              - "iot:Subscribe"
+              - "iot:Receive"
+            Effect: Allow
+            Resource: 
+              - !Sub "arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topicfilter/loadtest/#"
+          - 
+            Sid: MQTTWrite
+            Action:
+              - "iot:Publish"
+            Effect: Allow
+            Resource: 
+              - { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":topic/loadtest/${iot:Certificate.Subject.CommonName}"]] }
+              - !Sub "arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/loadtest"
+
