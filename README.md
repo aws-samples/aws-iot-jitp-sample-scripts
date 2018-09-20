@@ -1,8 +1,7 @@
-AWS IoT JITP Sample Scripts
-===========================
+## AWS IoT Just In Time Provisioning Sample Scripts
 
-These are demo scripts for explaining how to use a custom CA and Just In Time 
-Provisioning (JITP) with AWS IoT.
+These are sample scripts for demonstrating how to use a custom CA and Just In 
+Time Provisioning (JITP) with AWS IoT at scale.
 
 These scripts are not meant for production use, but are meant to help explain 
 the steps involved in generating the necessary components.
@@ -478,3 +477,7 @@ this we can run the loadtest with those values:
 
 This will start up all 13 subprocesses which will start sending messages 
 immediately.  If you have configured the Amazon SQS queue as above
+
+## License Summary
+
+This sample code is made available under a modified MIT license. See the LICENSE file.
