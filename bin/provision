@@ -12,8 +12,15 @@ if [[ ! -f "$CA.ca.pem" ]]; then
 fi
 
 openssl genrsa -out "$DEVICE.key" 2048
-openssl req -new -key "$DEVICE.key" -out "$DEVICE.csr"  -subj "/C=LU/ST=LU/L=LU/O=AWS/OU=TEST/CN=$DEVICE"
+openssl req -new -key "$DEVICE.key" -out "$DEVICE.csr"  -subj "/CN=$DEVICE"
 openssl x509 -req -in $DEVICE.csr -CA "$CA.ca.pem" -CAkey "$CA.ca.key" -CAcreateserial -out "$DEVICE.crt.tmp" -days 500 -sha256
 cat "$DEVICE.crt.tmp" "$CA.ca.pem" > "$DEVICE.crt"
 rm "$DEVICE.crt.tmp"
 rm "$DEVICE.csr"
+
+endpoint=$(aws iot describe-endpoint --endpoint-type iot:Data-ATS | jq -r .endpointAddress )
+
+mosquitto_pub --cafile certs/AmazonRootCA1.pem --cert $DEVICE.crt --key $DEVICE.key \
+	-h $endpoint -p 8883 -q 0 -i $DEVICE -d --tls-version tlsv1.2 -m '' -t '/register'
+mosquitto_pub --cafile certs/AmazonRootCA1.pem --cert $DEVICE.crt --key $DEVICE.key \
+	-h $endpoint -p 8883 -q 0 -i $DEVICE -d --tls-version tlsv1.2 -m '' -t '/register'
