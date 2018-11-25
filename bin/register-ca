@@ -14,5 +14,5 @@ SUB=`aws iot get-registration-code | jq -r '.["registrationCode"]'`
 openssl req -new -key "$CA.ca.key" -out verificationCert.csr -subj "/CN=$SUB"
 openssl x509 -req -in verificationCert.csr -CA "$CA.ca.pem" -CAkey "$CA.ca.key" -CAcreateserial -out verificationCert.pem -days 500 -sha256
 mkdir -p tmp
-sed "s%YOUR_ACCOUNT_HERE%$AWS_ACCOUNT%" etc/regfile.tmp  > tmp/regfile
+sed "s%\${AWS_ACCOUNT}%$AWS_ACCOUNT%" etc/regfile.tmp  > tmp/regfile
 aws iot register-ca-certificate --ca-certificate "file://$CA.ca.pem" --verification-cert file://verificationCert.pem --set-as-active  --allow-auto-registration --registration-config file://tmp/regfile
