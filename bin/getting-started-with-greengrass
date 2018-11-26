@@ -15,11 +15,14 @@ THERE
 
 # Install development tools & utilities
 sudo yum groupinstall  -y 'Development Tools'
-sudo yum install  -y jq
+sudo yum install  -y jq gettext
 
 # Download greengrass
 curl -O https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.6.0/greengrass-linux-x86-64-1.6.0.tar.gz
 sudo tar -C / -zxvf greengrass-linux-x86-64-1.6.0.tar.gz
+
+# Downlaod the AmazonRootCA1.pem
+curl https://www.amazontrust.com/repository/AmazonRootCA1.pem | sudo tee /greengrass/certs/AmazonRootCA1.pem
 
 # Download NVM
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash

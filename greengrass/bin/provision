@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+DEVICE=$1
+CA=${2:-root}
+AWS_REGION=${AWS_REGION:-$(aws configure get region)}
+
+if [[ -z "$DEVICE" ]]; then
+	echo "Usage: $0 deviceName [CA]"
+	exit
+fi
+
+if [[ ! -f "$CA.ca.pem" ]]; then
+	echo "Could not find certificate for $CA"
+	exit
+fi
+
+if [[ -z "$AWS_REGION" ]]; then
+	echo "Please set the environment variable AWS_REGION"
+	exit
+fi
+
+if [[ -z "$AWS_ACCOUNT" ]]; then
+	echo "Please set the environment variable AWS_ACCOUNT"
+	exit
+fi
+
+openssl genrsa -out "$DEVICE.key" 2048
+openssl req -new -key "$DEVICE.key" -out "$DEVICE.csr"  -subj "/CN=$DEVICE"
+openssl x509 -req -in $DEVICE.csr -CA "$CA.ca.pem" -CAkey "$CA.ca.key" -CAcreateserial -out "$DEVICE.crt.tmp" -days 500 -sha256
+cat "$DEVICE.crt.tmp" "$CA.ca.pem" > "$DEVICE.crt"
+rm "$DEVICE.crt.tmp"
+rm "$DEVICE.csr"
+
+export AWS_REGION
+export DEVICE
+export AWS_IOT_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:Data-ATS | jq -r .endpointAddress )
+cat etc/config.json | envsubst | tee /greengrass/config/config.json
