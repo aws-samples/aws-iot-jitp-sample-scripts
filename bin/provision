@@ -6,6 +6,11 @@
 DEVICE=$1
 CA=${2:-root}
 
+if [[ -z "$DEVICE" ]]; then
+	echo "Usage: $0 deviceName [CA]"
+	exit
+fi
+
 if [[ ! -f "$CA.ca.pem" ]]; then
 	echo "Could not find certificate for $CA"
 	exit
