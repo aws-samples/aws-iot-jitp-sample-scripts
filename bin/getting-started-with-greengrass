@@ -13,6 +13,18 @@ fs.protected_hardlinks=1
 fs.protected_symlinks=1
 THERE
 
+# setup cgroups
+sudo mount -t tmpfs -o uid=0,gid=0,mode=0755 cgroup /sys/fs/cgroup
+for sys in $(awk '!/^#/ { if ($4 == 1) print $1 }' /proc/cgroups); do
+	mkdir -p $sys
+	if ! sudo mountpoint -q $sys; then
+		if ! sudo mount -n -t cgroup -o $sys cgroup $sys; then
+			sudo rmdir $sys || true
+		fi
+	fi
+done
+
+
 # Install development tools & utilities
 sudo yum groupinstall  -y 'Development Tools'
 sudo yum install  -y jq gettext
