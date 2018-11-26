@@ -79,16 +79,42 @@ class GreengrassStack extends cdk.Stack {
 					{
 						"Effect": "Allow",
 						"Action": [
-							"iot:*"
+							"iot:Publish",
+							"iot:Subscribe",
+							"iot:Connect",
+							"iot:Receive"
 						],
-						"Resource": "*"
+						"Resource": [
+							"*"
+						]
+					},
+					{
+						"Effect": "Allow",
+						"Action": [
+							"iot:GetThingShadow",
+							"iot:UpdateThingShadow",
+							"iot:DeleteThingShadow"
+						],
+						"Resource": [
+							"*"
+						]
+					},
+					{
+						"Effect": "Allow",
+						"Action": [
+							"greengrass:*"
+						],
+						"Resource": [
+							"*"
+						]
 					}
 				]
 			}
 		})
 
 		const provisioningRole = new iam.Role(this,'GreengrassProvisioningRole', {
-			assumedBy: new iam.ServicePrincipal('iot.amazonaws.com')
+			assumedBy: new iam.ServicePrincipal('iot.amazonaws.com'),
+			roleName: 'GreengrassProvisioningRole'
 		});
 		provisioningRole.addToPolicy(new iam.PolicyStatement().addActions(
 			"iot:AddThingToThingGroup",
