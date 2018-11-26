@@ -37,4 +37,7 @@ rm "$DEVICE.csr"
 export AWS_REGION
 export DEVICE
 export AWS_IOT_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:Data-ATS | jq -r .endpointAddress )
-cat etc/config.json | envsubst | tee /greengrass/config/config.json
+cat etc/config.json | envsubst | sudo tee /greengrass/config/config.json
+sudo cp $DEVICE.crt /greengrass/certs/
+sudo cp $DEVICE.key /greengrass/certs/
+
