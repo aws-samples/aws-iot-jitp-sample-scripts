@@ -1,0 +1,16 @@
+{
+    "coreThing": {
+        "caPath": "AmazonRootCA1.pem",
+        "certPath": "${DEVICE}.crt",
+        "keyPath": "${DEVICE}.key",
+        "thingArn": "arn:aws:iot:${AWS_REGION}:${AWS_ACCOUNT}:thing/${DEVICE}",
+        "iotHost": "${AWS_IOT_ENDPOINT}",
+        "ggHost": "greengrass-ats.iot.${AWS_REGION}.amazonaws.com"
+    },
+    "runtime": {
+        "cgroup": {
+            "useSystemd": "no"
+        }
+    },
+    "managedRespawn": false
+}

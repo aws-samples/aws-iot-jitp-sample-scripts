@@ -13,13 +13,30 @@ fs.protected_hardlinks=1
 fs.protected_symlinks=1
 THERE
 
+# setup cgroups
+sudo mount -t tmpfs -o uid=0,gid=0,mode=0755 cgroup /sys/fs/cgroup
+pushd /sys/fs/cgroup
+for sys in $(awk '!/^#/ { if ($4 == 1) print $1 }' /proc/cgroups); do
+	sudo mkdir -p $sys
+	if ! sudo mountpoint -q $sys; then
+		if ! sudo mount -n -t cgroup -o $sys cgroup $sys; then
+			sudo rmdir $sys || true
+		fi
+	fi
+done
+popd
+
+
 # Install development tools & utilities
 sudo yum groupinstall  -y 'Development Tools'
-sudo yum install 
+sudo yum install  -y jq gettext
 
 # Download greengrass
 curl -O https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.6.0/greengrass-linux-x86-64-1.6.0.tar.gz
 sudo tar -C / -zxvf greengrass-linux-x86-64-1.6.0.tar.gz
+
+# Downlaod the AmazonRootCA1.pem
+curl https://www.amazontrust.com/repository/AmazonRootCA1.pem | sudo tee /greengrass/certs/AmazonRootCA1.pem
 
 # Download NVM
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
@@ -28,5 +45,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-git clone https://github.com/aws-samples/aws-iot-jitp-sample-scripts.git
-
+git clone --single-branch -b reinvent https://github.com/aws-samples/aws-iot-jitp-sample-scripts.git
+nvm install 11
+nvm use 11
+npm i -g aws-cdk

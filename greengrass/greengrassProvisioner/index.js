@@ -1,51 +1,53 @@
-cname,onst aws = require('aws-sdk')
+const aws = require('aws-sdk')
 const uuid = require('uuid')
 const iot = new aws.IotData({ endpoint: process.env.AWS_IOT_ENDPOINT })
-const greengrass = new AWS.Greengrass()
+const greengrass = new aws.Greengrass()
+const iotapi = new aws.Iot()
 
-const role_arn = process.env.SERVICE_ROLE_ARN
+const role_arn = process.env.GREENGRASS_ROLE
+const region = process.env.AWS_REGION
 
 aws.config.apiVersions = {
 	greengrass: '2017-06-07',
 }
 
-function create_loggers() {
+function create_loggers(cb) {
 	const logger_params = {
 		InitialVersion: {
-    			Loggers: [{
-				Component: 'GreengrassSystem',
-				Id: 'SystemDebug'
-				Level: 'DEBUG',
-				Space: 512000,
-				Type: 'FileSystem'
-			},{
-				Component: 'Lambda',
-				Id: 'SystemDebug'
-				Level: 'DEBUG',
-				Space: 512000,
-				Type: 'FileSystem'
-			},{
-				Component: 'GreengrassSystem',
-				Id: 'SystemDebug'
-				Level: 'DEBUG',
-				Space: 512000,
-				Type: 'AWSCloudWatch'
-			},{
-				Component: 'Lambda',
-				Id: 'SystemDebug'
-				Level: 'DEBUG',
-				Space: 512000,
-				Type: 'AWSCloudWatch'
-			}]
+			Loggers: [{
+					"Component": "Lambda",
+					"Id": "DebugCloudLambda",
+					"Level": "DEBUG",
+					"Type": "AWSCloudWatch"
+				},{
+					"Component": "GreengrassSystem",
+					"Id": "DebugCloudSystem",
+					"Level": "DEBUG",
+					"Type": "AWSCloudWatch"
+				},{
+					"Component": "Lambda",
+					"Id": "DebugLocalLambda",
+					"Level": "DEBUG",
+					"Space": 25600,
+					"Type": "FileSystem"
+				},{
+					"Component": "GreengrassSystem",
+					"Id": "DebugLocalSystem",
+					"Level": "DEBUG",
+					"Space": 25600,
+					"Type": "FileSystem"
+				}
+			]
 		}
 	}
 	greengrass.createLoggerDefinition(logger_params, (err,data) => {
-		if (err) return console.log(err)	
-		console.log(data)	
+		if (err) return console.log(err)
+		console.log(data)
+		cb(data.LatestVersionArn)
 	})
 }
 
-function create_core(name,arn,cert) {
+function create_core(name,arn,cert,cb) {
 	const params = {
 		InitialVersion: {
 			Cores: [{
@@ -60,31 +62,28 @@ function create_core(name,arn,cert) {
 	greengrass.createCoreDefinition(params,(err,data) => {
 		if (err) return console.log(err)
 		console.log(data)
+		cb(data.LatestVersionArn)
 	})
 }
 
-function create_group(name) {
+function create_group(name,core,loggers,cb,) {
 	var params = {
-		AmznClientToken: 'STRING_VALUE',
 		InitialVersion: {
-			CoreDefinitionVersionArn: 'STRING_VALUE',
-			DeviceDefinitionVersionArn: 'STRING_VALUE',
-			FunctionDefinitionVersionArn: 'STRING_VALUE',
-			LoggerDefinitionVersionArn: 'STRING_VALUE',
-			ResourceDefinitionVersionArn: 'STRING_VALUE',
-			SubscriptionDefinitionVersionArn: 'STRING_VALUE'
+			CoreDefinitionVersionArn: core,
+			LoggerDefinitionVersionArn: loggers,
 		},
-		Name: 'STRING_VALUE'
+		Name: name
 	}
 	greengrass.createGroup(params, function(err, data) {
 		if (err) return console.log(err, err.stack) // an error occurred
 		console.log(data)           // successful response
+		cb(data)
 	})
 }
 
 function associate_role(name,role) {
 	const params = {
-		GroupId: name + "_group",
+		GroupId: name,
 		RoleArn: role 
 	}
 	greengrass.associateRoleToGroup(params, function (err, data) {
@@ -96,13 +95,23 @@ function associate_role(name,role) {
 exports.handler = (event, context, callback) => {
 	const message = JSON.parse(event.Records[0].body)
 	console.log(message)
-	const cert = message.cert // TODO
-	const name = message.name // TODO
+	const name = message.thingName
 	const group_name = name + '_group'
-	const core_arn = 
+	const account = message.accountId
+	const core_arn = "arn:aws:iot:" + region + ":" + account + ":thing/" + name
 
-	create_core(name,core_arn,cert)
-	create_loggers()
-	create_group(group_name)
-	associate_role(group_name,role_arn)
+	iotapi.listThingPrincipals({ thingName: name }, (err,data) => {
+		if (err) return console.log(err)
+		console.log(data)
+		const cert = data.principals[0]
+		create_core(name,core_arn,cert,(core) => {
+			create_loggers((loggers) => {
+				create_group(group_name,core,loggers, (group) => {
+					console.log(group)
+					associate_role(group.Id,role_arn)
+				})
+			})
+		})
+	})
 }
+
