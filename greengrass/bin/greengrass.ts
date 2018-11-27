@@ -22,7 +22,15 @@ class GreengrassStack extends cdk.Stack {
 		const greengrassConsumerRole = new iam.Role(this,'GreengrassConsumerRole', {
 			assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
 		});
-
+		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"iam:PassRole"
+		).addResource("*"))
+		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"iot:*"
+		).addResource("*"))
+		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"greengrass:*"
+		).addResource("*"))
 		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
 			"sqs:DeleteMessage",
  			"sqs:ChangeMessageVisibility",
@@ -41,6 +49,7 @@ class GreengrassStack extends cdk.Stack {
 		});
 
 		fn.addEnvironment("AWS_IOT_ENDPOINT",parent.getContext('iotendpoint'))
+		fn.addEnvironment("AWS_REGION",parent.getContext('aws:cdk:toolkit:default-region'))
 
 		new lambda.cloudformation.EventSourceMappingResource(this,'GreengrassProvisioningMapping', {
 			batchSize: 1,
@@ -111,6 +120,67 @@ class GreengrassStack extends cdk.Stack {
 				]
 			}
 		})
+
+		const greengrassRole = new iam.Role(this,'GreengrassRole', {
+			assumedBy: new iam.ServicePrincipal('greengrass.amazonaws.com'),
+			roleName: 'GreengrassRole'
+		});
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"s3:GetObject"
+		).addResources(
+			"arn:aws:s3:::eu-central-1-greengrass-updates/*",
+			"arn:aws:s3:::us-east-1-greengrass-updates/*",
+			"arn:aws:s3:::ap-northeast-1-greengrass-updates/*",
+			"arn:aws:s3:::us-west-2-greengrass-updates/*",
+			"arn:aws:s3:::ap-southeast-2-greengrass-updates/*"
+		));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"logs:*"
+		).addResource("*"))
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"iot:DeleteThingShadow",
+			"iot:GetThingShadow",
+			"iot:UpdateThingShadow"
+		).addResources(
+			"arn:aws:iot:*:*:thing/GG_*",
+			"arn:aws:iot:*:*:thing/*-gcm",
+			"arn:aws:iot:*:*:thing/*-gda",
+			"arn:aws:iot:*:*:thing/*-gci"
+		));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"iot:DescribeThing"
+		).addResource("arn:aws:iot:*:*:thing/*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"iot:DescribeCertificate"
+		).addResource("arn:aws:iot:*:*:cert/*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"greengrass:*"
+		).addResource("*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"lambda:GetFunction",
+                	"lambda:GetFunctionConfiguration"
+		).addResource("*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"secretsmanager:GetSecretValue"
+		).addResource("arn:aws:secretsmanager:*:*:secret:greengrass-*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"s3:GetObject"
+		).addResources(
+			"arn:aws:s3:::*Greengrass*",
+			"arn:aws:s3:::*GreenGrass*",
+			"arn:aws:s3:::*greengrass*",
+			"arn:aws:s3:::*Sagemaker*",
+			"arn:aws:s3:::*SageMaker*",
+			"arn:aws:s3:::*sagemaker*"
+		));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"s3:GetBucketLocation"
+		).addResource("*"));
+		greengrassRole.addToPolicy(new iam.PolicyStatement().addActions(
+			"sagemaker:DescribeTrainingJob"
+		).addResource("arn:aws:sagemaker:*:*:training-job/*"));
+		
+		fn.addEnvironment("GREENGRASS_ROLE",greengrassRole.roleArn)
 
 		const provisioningRole = new iam.Role(this,'GreengrassProvisioningRole', {
 			assumedBy: new iam.ServicePrincipal('iot.amazonaws.com'),
