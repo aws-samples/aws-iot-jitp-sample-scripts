@@ -49,7 +49,6 @@ class GreengrassStack extends cdk.Stack {
 		});
 
 		fn.addEnvironment("AWS_IOT_ENDPOINT",parent.getContext('iotendpoint'))
-		fn.addEnvironment("AWS_REGION",parent.getContext('aws:cdk:toolkit:default-region'))
 
 		new lambda.cloudformation.EventSourceMappingResource(this,'GreengrassProvisioningMapping', {
 			batchSize: 1,
