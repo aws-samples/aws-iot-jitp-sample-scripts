@@ -5,7 +5,7 @@
         "keyPath": "${DEVICE}.key",
         "thingArn": "arn:aws:iot:${AWS_REGION}:${AWS_ACCOUNT}:thing/${DEVICE}",
         "iotHost": "${AWS_IOT_ENDPOINT}",
-        "ggHost": "greengrass.iot.${AWS_REGION}.amazonaws.com"
+        "ggHost": "greengrass-ats.iot.${AWS_REGION}.amazonaws.com"
     },
     "runtime": {
         "cgroup": {
