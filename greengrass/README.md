@@ -11,6 +11,11 @@ for running AWS Greengrass.
 You can then switch to the greengrass sample script directory:
 
 	cd aws-iot-jitp-sample-script/greengrass
+	
+Then you will need to install the dependencies
+
+	npm i -g aws-cdk
+	npm i 
 
 The first step is to deploy the necessary provisioning resource in AWS using
 the AWS CDK:
