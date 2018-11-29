@@ -1,0 +1,7 @@
+**/tmp/
+*.crt
+*.csr
+*.key
+*.pem
+*.srl
+**.DS_Store

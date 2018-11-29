@@ -23,8 +23,11 @@ class GreengrassStack extends cdk.Stack {
 			assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
 		});
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
+=======
+>>>>>>> reinvent
 		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
 			"iam:PassRole"
 		).addResource("*"))
@@ -34,6 +37,9 @@ class GreengrassStack extends cdk.Stack {
 		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
 			"greengrass:*"
 		).addResource("*"))
+<<<<<<< HEAD
+>>>>>>> reinvent
+=======
 >>>>>>> reinvent
 		greengrassConsumerRole.addToPolicy(new iam.PolicyStatement().addActions(
 			"sqs:DeleteMessage",
@@ -54,8 +60,11 @@ class GreengrassStack extends cdk.Stack {
 
 		fn.addEnvironment("AWS_IOT_ENDPOINT",parent.getContext('iotendpoint'))
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 		fn.addEnvironment("AWS_REGION",parent.getContext('aws:cdk:toolkit:default-region'))
+>>>>>>> reinvent
+=======
 >>>>>>> reinvent
 
 		new lambda.cloudformation.EventSourceMappingResource(this,'GreengrassProvisioningMapping', {
@@ -96,10 +105,13 @@ class GreengrassStack extends cdk.Stack {
 						"Effect": "Allow",
 						"Action": [
 <<<<<<< HEAD
+<<<<<<< HEAD
 							"iot:*"
 						],
 						"Resource": "*"
 =======
+=======
+>>>>>>> reinvent
 							"iot:Publish",
 							"iot:Subscribe",
 							"iot:Connect",
@@ -128,6 +140,9 @@ class GreengrassStack extends cdk.Stack {
 						"Resource": [
 							"*"
 						]
+<<<<<<< HEAD
+>>>>>>> reinvent
+=======
 >>>>>>> reinvent
 					}
 				]
@@ -135,9 +150,12 @@ class GreengrassStack extends cdk.Stack {
 		})
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		const provisioningRole = new iam.Role(this,'GreengrassProvisioningRole', {
 			assumedBy: new iam.ServicePrincipal('iot.amazonaws.com')
 =======
+=======
+>>>>>>> reinvent
 		const greengrassRole = new iam.Role(this,'GreengrassRole', {
 			assumedBy: new iam.ServicePrincipal('greengrass.amazonaws.com'),
 			roleName: 'GreengrassRole'
@@ -202,6 +220,9 @@ class GreengrassStack extends cdk.Stack {
 		const provisioningRole = new iam.Role(this,'GreengrassProvisioningRole', {
 			assumedBy: new iam.ServicePrincipal('iot.amazonaws.com'),
 			roleName: 'GreengrassProvisioningRole'
+<<<<<<< HEAD
+>>>>>>> reinvent
+=======
 >>>>>>> reinvent
 		});
 		provisioningRole.addToPolicy(new iam.PolicyStatement().addActions(

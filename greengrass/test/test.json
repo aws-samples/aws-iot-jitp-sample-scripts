@@ -1,0 +1,11 @@
+{ "eventType": "THING_EVENT",
+"eventId": "e424d4b6373151406278b2be76261429",
+"timestamp": 1543337756696,
+"operation": "CREATED",
+"accountId": "097591811552",
+"thingId": "d6600841-6433-491e-a71d-094b0b4020a0",
+"thingName": "ggg",
+"versionNumber": 1,
+"thingTypeName": null,
+"billinGroupName": null,
+"attributes": {} }

@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+const aws = require('aws-sdk')
+
+aws.config.update({region: 'us-east-1'});
+iot = new aws.Iot()
+
+const { exec, spawn } = require('child_process')
+const { exit } = require('process')
+const fs = require('fs');	
+
+const device = process.argv[2]
+const verbose = false
+
+console.log("Provisioning key and certificate for " + device)
+
+// runs a list of commands in a shell
+const run = function (cmd,...args) {
+	exec(cmd, (err,stdout,stderr) => {
+		if (err) { console.log(err) }
+		if (verbose) console.log(stderr)
+		if (verbose) console.log(stdout)
+		if (args.length == 1 && typeof(args[0]) == 'function') return args[0]()
+		return run(...args)
+	})
+}
+const createCredentials = (device,cb) => {
+	fs.readFile(device + '.csr', 'utf8', (err,csr) => {
+		console.log(csr)
+		var params = {
+			certificateSigningRequest: csr,
+			setAsActive: true
+		};
+		iot.createCertificateFromCsr(params, function(err, data) {
+			if (err) return console.log(err, err.stack)
+			fs.writeFile(device + '.crt', data.certificatePem, (err,data) => {	
+				if (err) return console.log(err)
+				console.log(data)
+			})
+		});
+	})
+}
+
+const createKeyAndCsr = (device) => {
+	run(
+		'openssl genrsa -out "' + device + '.key" 2048',
+		'openssl req -new -key "' + device + '.key" -out "' + device + '.csr"  -subj "/CN=' + device +'"',
+		(() => { createCredentials(device) })
+	)
+}
+
+createKeyAndCsr(device)

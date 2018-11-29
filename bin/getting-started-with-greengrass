@@ -45,7 +45,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-git clone --single-branch -b reinvent https://github.com/aws-samples/aws-iot-jitp-sample-scripts.git
+git clone --single-branch -b master https://github.com/aws-samples/aws-iot-jitp-sample-scripts.git
 nvm install 11
 nvm use 11
 npm i -g aws-cdk
