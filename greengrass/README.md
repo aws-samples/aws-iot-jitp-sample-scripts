@@ -3,7 +3,7 @@ Getting Started With AWS Greengrass
 
 To install AWS Greengrass in a fresh AWS Cloud9 environment:
 
-	curl https://raw.githubusercontent.com/aws-samples/aws-iot-jitp-sample-scripts/reinvent/bin/getting-started-with-greengrass | bash
+	curl https://raw.githubusercontent.com/aws-samples/aws-iot-jitp-sample-scripts/master/greengrass/bin/getting-started-with-greengrass | bash
 
 This will install all of the necessary dependencies and configure the system
 for running AWS Greengrass.
