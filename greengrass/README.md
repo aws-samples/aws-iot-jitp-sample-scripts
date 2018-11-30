@@ -14,6 +14,7 @@ You can then switch to the greengrass sample script directory:
 	
 Then you will need to install the dependencies
 
+	nvm use 11
 	npm i -g aws-cdk
 	npm i 
 
