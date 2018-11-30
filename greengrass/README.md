@@ -24,6 +24,15 @@ the AWS CDK:
 	cdk bootstrap
 	cdk deploy
 
+If you do not have a service role associated with your account, you can add
+the role listed in the outputs from the cdk deploy step to your account
+
+	aws greengrass associate-service-role-to-account --role-arn <Arn>
+
+You can verify that the role is associated to your account with
+
+	aws greengrass get-service-role-for-account
+
 One you have successfully deployed the GreengrassStack you have the ability to
 create a new certificate authority for signing your AWS Greengrass core
 certificates:
