@@ -11,6 +11,11 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: IoTProvisioning
+      Path: /iot/
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration"
+        - "arn:aws:iam::aws:policy/service-role/AWSIoTLogging"
+        - "arn:aws:iam::aws:policy/service-role/AWSIoTRuleActions"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -19,74 +24,6 @@ Resources:
             Principal:
               Service: "iot.amazonaws.com"
             Action: "sts:AssumeRole"
-      Policies:
-        -
-          PolicyName: ThingRegistrationPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - 
-                Effect: Allow
-                Action:
-                  - "iot:AddThingToThingGroup"
-                  - "iot:AttachPrincipalPolicy"
-                  - "iot:AttachThingPrincipal"
-                  - "iot:CreateCertificateFromCsr"
-                  - "iot:CreatePolicy"
-                  - "iot:CreateThing"
-                  - "iot:DescribeCertificate"
-                  - "iot:DescribeThing"
-                  - "iot:DescribeThingGroup"
-                  - "iot:DescribeThingType"
-                  - "iot:DetachThingPrincipal"
-                  - "iot:GetPolicy"
-                  - "iot:ListPolicyPrincipals"
-                  - "iot:ListPrincipalPolicies"
-                  - "iot:ListPrincipalThings"
-                  - "iot:ListThingGroupsForThing"
-                  - "iot:ListThingPrincipals"
-                  - "iot:RegisterCertificate"
-                  - "iot:RegisterThing"
-                  - "iot:RemoveThingFromThingGroup"
-                  - "iot:UpdateCertificate"
-                  - "iot:UpdateThing"
-                  - "iot:UpdateThingGroupsForThing"
-                Resource: "*"
-        -
-          PolicyName: ThingRegistrationLogginPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - 
-                Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                  - "logs:PutMetricFilter"
-                  - "logs:PutRetentionPolicy"
-                  - "logs:GetLogEvents"
-                  - "logs:DeleteLogStream"
-                Resource: "*"  
-        -
-          PolicyName: ThingRegistrationRuleActionPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              -
-                Effect: "Allow"
-                Action:
-                  - "dynamodb:PutItem"
-                  - "kinesis:PutRecord"
-                  - "iot:Publish"
-                  - "s3:PutObject"
-                  - "sns:Publish"
-                  - "sqs:SendMessage*"
-                  - "cloudwatch:SetAlarmState"
-                  - "cloudwatch:PutMetricData"
-                  - "es:ESHttpPut"
-                  - "firehose:PutRecord"
-                Resource: "*"
 
   IoTAccess:
     Type: "AWS::IoT::Policy"

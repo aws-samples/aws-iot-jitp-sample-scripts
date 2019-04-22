@@ -3,7 +3,6 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-
 CN=${1:-root}
 COUNTRY=${2:-LU}
 LOCATION=${3:-Luxembourg}
@@ -12,4 +11,10 @@ ORG=${5:-AWS}
 ORGUNIT=${6:-Demo}
 
 openssl genrsa -out "$CN.ca.key" 2048
-openssl req -x509 -new -nodes -key "$CN.ca.key" -sha256 -days 1024 -out "$CN.ca.pem"  -subj "/CN=$CN/C=$COUNTRY/L=$LOCATION/ST=$STATE/O=$ORG/OU=$ORGUNIT"
+
+# optionally use command line args for subject
+# openssl req -x509 -new -nodes -key "$CN.ca.key" -sha256 -days 1024 -out "$CN.ca.pem"  -subj "/CN=$CN/C=$COUNTRY/L=$LOCATION/ST=$STATE/O=$ORG/OU=$ORGUNIT"
+
+# use conf file instead!
+openssl req -new -sha256 -key root.ca.key -nodes -out root.ca.csr -config rootCA_openssl.conf
+openssl x509 -req -days 3650 -extfile rootCA_openssl.conf -extensions v3_ca -in root.ca.csr -signkey root.ca.key -out root.ca.pem 

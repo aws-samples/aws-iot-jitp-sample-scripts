@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+CA=${1:-root}
+
+if [[ -z "$AWS_ACCOUNT" ]]; then
+	echo "Please set the AWS_ACCOUNT environment variable"
+	exit
+fi
+
+sed "s%\${AWS_ACCOUNT}%$AWS_ACCOUNT%" etc/regfile.tmp  > tmp/regfile
+aws iot update-ca-certificate --certificate-id 5f59c4ebad3f52935a111ec7188dd149d9f7d5de6205dfdac280ee1b5322c66f --new-auto-registration-status ENABLE --registration-config file://tmp/regfile
