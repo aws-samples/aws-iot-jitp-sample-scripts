@@ -10,7 +10,7 @@ Resources:
   IoTProvisioningRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: IoTProvisioning
+      RoleName: !Sub "${AWS::StackName}IoTProvisioning"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -21,7 +21,7 @@ Resources:
             Action: "sts:AssumeRole"
       Policies:
         -
-          PolicyName: ThingRegistrationPolicy
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -53,7 +53,7 @@ Resources:
                   - "iot:UpdateThingGroupsForThing"
                 Resource: "*"
         -
-          PolicyName: ThingRegistrationLogginPolicy
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationLogginPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -69,7 +69,7 @@ Resources:
                   - "logs:DeleteLogStream"
                 Resource: "*"  
         -
-          PolicyName: ThingRegistrationRuleActionPolicy
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationRuleActionPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -91,27 +91,68 @@ Resources:
   IoTAccess:
     Type: "AWS::IoT::Policy"
     Properties:
-      PolicyName: IoTAccess
+      PolicyName: !Sub "${AWS::StackName}IoTAccess"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
           - 
-            Sid: MQTTConnect
             Action:
               - "iot:Connect"
             Effect: Allow
             Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":client/${iot:Certificate.Subject.CommonName}"]] }
           -
-            Sid: MQTTRead
             Action:
               - "iot:Subscribe"
               - "iot:Receive"
             Effect: Allow
-            Resource: "*"
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:", { "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}"}, ":topicfilter/${iot:Certificate.Subject.CommonName}/cmd/+"]] }
           - 
-            Sid: MQTTWrite
             Action:
               - "iot:Publish"
             Effect: Allow
-            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":topic/${iot:Certificate.Subject.CommonName}"]] }
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":topic/${iot:Certificate.Subject.CommonName}/data/*"]] }
 
+  JITPFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Role: !GetAtt CustomLambdaRole.Arn
+      MemorySize: 512
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 30
+      Code:
+        ZipFile: |
+          const aws = require('aws-sdk')
+          const https = require('https')
+          const url = require('url')
+          const process = require('process')
+          const child = require('child_process')
+          const report = function(status,event,context,data) {
+            const parsedUrl = url.parse(event.ResponseURL)
+            const result = JSON.stringify({
+              Status: status, 
+              RequestId: event.RequestId,
+              StackId: event.StackId,
+              LogicalResourceId: event.LogicalResourceId,
+              Data: data
+            })
+            var request = https.request({
+              hostname: parsedUrl.hostname,
+              port: 443,
+              path: parsedUrl.path,
+              method: "PUT",
+              headers: {
+                "content-type": "",
+                "content-length": result.length
+              }, function(response) {
+                if (event.ResourceProperties.Debug)
+                  console.log(response)
+                context.done()  // finish the request
+              })
+            request.on('error', function(error) {
+              console.log(error)
+              context.done()
+            })
+            exports.handler = function(event,context) {
+              if 
+            }

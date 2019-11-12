@@ -3,14 +3,18 @@
 
 include etc/config.mk
 
-.PHONY: build deploy delete log sqs loadtest 
+.PHONY: build deploy delete log sqs loadtest certificate register-ca
 
-all: deploy
+all: 
+	@echo "export AWS_BUCKET=your_bucket_name"
+	@echo "export AWS_STACK=your_stack_name"
 
-build: 
+build: tmp/cloudformation.pkg.yaml
+
+tmp/cloudformation.pkg.yaml: 
 	aws cloudformation package --s3-bucket $(AWS_BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.pkg.yaml
 
-deploy: build
+deploy: tmp/cloudformation.pkg.yaml
 	aws cloudformation deploy --stack-name $(AWS_STACK) --template-file tmp/cloudformation.pkg.yaml --capabilities CAPABILITY_NAMED_IAM 
 
 delete:
@@ -25,3 +29,9 @@ sqs:
 loadtest:
 	cd loadtest && $(MAKE) install
 	cd loadtest && $(MAKE) start
+
+certificate:
+	./bin/create-ca
+
+register-ca:
+	./bin/register-ca

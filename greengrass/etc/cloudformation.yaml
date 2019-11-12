@@ -1,0 +1,209 @@
+# vim: set ts=2 sw=2 et:
+# 
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# 
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT Policies and IAM Roles For Greengrass
+
+Resources:
+  GreengrassProvisioningQueue:
+    Type: AWS::SQS::Queue
+    Properties: {}
+
+  GreengrassProvisioningTopic:
+    Type: AWS::SNS::Topic
+    Properties: {}
+  
+  GreengrassConsumerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}IAMPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "iam:PassRole"
+                Resource: "*"
+        - PolicyName: !Sub "${AWS::StackName}IoTPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "iot:*"
+                Resource: "*"
+        - PolicyName: !Sub "${AWS::StackName}GGPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "greengrass:*"
+                Resource: "*"
+        - PolicyName: !Sub "${AWS::StackName}SQSPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "sqs:DeleteMessage"
+                  - "sqs:ChangeMessageVisibility"
+                  - "sqs:ReceiveMessage"
+                  - "sqs:GetQueueAttributes"
+                Resource: !GetAtt GreengrassProvisioningQueue.Arn
+        - PolicyName: !Sub "${AWS::StackName}LogsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "logs:*"
+                Resource: "*"
+
+  GreengrassPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service: "iot.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}SQSPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "sqs:SendMessage"
+                Resource: !GetAtt GreengrassProvisioningQueue.Arn
+
+  GreengrassPublisher:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: !Sub "${AWS::StackName}SQSPublisher"
+      TopicRulePayload:
+        AwsIotSqlVersion: "2016-03-23"
+        Sql: "SELECT * FROM '$aws/events/thing/+/created'"
+        RuleDisabled: false
+        Actions:
+          - Sqs:
+              QueueUrl: !Ref GreengrassProvisioningQueue
+              RoleArn: !GetAtt GreengrassPublisherRole.Arn
+              UseBase64: false
+
+  GreengrassIotPolicy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}GreengrassPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "iot:Publish"
+              - "iot:Subscribe"
+              - "iot:Connect"
+              - "iot:Receive"
+              - "iot:GetThingShadow"
+              - "iot:UpdateThingShadow"
+              - "iot:DeleteThingShadow"
+            Resource: "*"
+          - Effect: Allow
+            Action: 
+              - "greengrass:*"
+            Resource: "*"
+
+  GreengrassProvisioningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service: "iot.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Effect: Allow
+                Action:
+                  - "iot:AddThingToThingGroup"
+                  - "iot:AttachPrincipalPolicy"
+                  - "iot:AttachThingPrincipal"
+                  - "iot:CreateCertificateFromCsr"
+                  - "iot:CreatePolicy"
+                  - "iot:CreateThing"
+                  - "iot:DescribeCertificate"
+                  - "iot:DescribeThing"
+                  - "iot:DescribeThingGroup"
+                  - "iot:DescribeThingType"
+                  - "iot:DetachThingPrincipal"
+                  - "iot:GetPolicy"
+                  - "iot:ListPolicyPrincipals"
+                  - "iot:ListPrincipalPolicies"
+                  - "iot:ListPrincipalThings"
+                  - "iot:ListThingGroupsForThing"
+                  - "iot:ListThingPrincipals"
+                  - "iot:RegisterCertificate"
+                  - "iot:RegisterThing"
+                  - "iot:RemoveThingFromThingGroup"
+                  - "iot:UpdateCertificate"
+                  - "iot:UpdateThing"
+                  - "iot:UpdateThingGroupsForThing"
+                Resource: "*"
+        -
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationLogginPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:PutMetricFilter"
+                  - "logs:PutRetentionPolicy"
+                  - "logs:GetLogEvents"
+                  - "logs:DeleteLogStream"
+                Resource: "*"  
+        -
+          PolicyName: !Sub "${AWS::StackName}ThingRegistrationRuleActionPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "dynamodb:PutItem"
+                  - "kinesis:PutRecord"
+                  - "iot:Publish"
+                  - "s3:PutObject"
+                  - "sns:Publish"
+                  - "sqs:SendMessage*"
+                  - "cloudwatch:SetAlarmState"
+                  - "cloudwatch:PutMetricData"
+                  - "es:ESHttpPut"
+                  - "firehose:PutRecord"
+                Resource: "*"
