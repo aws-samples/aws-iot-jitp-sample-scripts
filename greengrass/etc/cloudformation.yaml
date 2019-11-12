@@ -6,6 +6,10 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Setup AWS IoT Policies and IAM Roles For Greengrass
 
+Parameters:
+  CodeBucket:
+    Type: String
+
 Resources:
   GreengrassProvisioningQueue:
     Type: AWS::SQS::Queue
@@ -217,7 +221,8 @@ Resources:
       Runtime: nodejs8.10
       Timeout: 30
       Code:
-        ZipFile: provisioner.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: provisioner.zip
       
   GreengrassEventSource:
     Type: AWS::Lambda::EventSourceMapping 
