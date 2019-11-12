@@ -3,36 +3,13 @@ Getting Started With AWS Greengrass
 
 To install AWS Greengrass in a fresh AWS Cloud9 environment:
 
-	curl https://raw.githubusercontent.com/aws-samples/aws-iot-jitp-sample-scripts/master/greengrass/bin/getting-started-with-greengrass | bash
+	make deploy BUCKET=goehd
 
-This will install all of the necessary dependencies and configure the system
-for running AWS Greengrass.
-
-You can then switch to the greengrass sample script directory:
-
-	cd aws-iot-jitp-sample-script/greengrass
-	
-Then you will need to install the dependencies
-
-	nvm use 11
-	npm i -g aws-cdk
-	npm i 
-
-The first step is to deploy the necessary provisioning resource in AWS using
-the AWS CDK:
-
-	npm run build
-	cdk bootstrap
-	cdk deploy
-
-If you do not have a service role associated with your account, you can add
-the role listed in the outputs from the cdk deploy step to your account
-
-	aws greengrass associate-service-role-to-account --role-arn <Arn>
-
-You can verify that the role is associated to your account with
+You can verify that the greengrass role is associated to your account with
 
 	aws greengrass get-service-role-for-account
+
+If not you will need to associate the role.
 
 One you have successfully deployed the GreengrassStack you have the ability to
 create a new certificate authority for signing your AWS Greengrass core
