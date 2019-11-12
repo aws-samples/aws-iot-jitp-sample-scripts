@@ -207,3 +207,22 @@ Resources:
                   - "es:ESHttpPut"
                   - "firehose:PutRecord"
                 Resource: "*"
+
+  GreengrassProvisioner:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt GreengrassConsumerRole.Arn
+      MemorySize: 512
+      Handler: index.handler
+      Runtime: nodejs8.10
+      Timeout: 30
+      Code:
+        ZipFile: provisioner.zip
+      
+  GreengrassEventSource:
+    Type: AWS::Lambda::EventSourceMapping 
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      EventSourceArn: !GetAtt GreengrassProvisioningQueue.Arn
+      FunctionName: !Ref GreengrassProvisioner
