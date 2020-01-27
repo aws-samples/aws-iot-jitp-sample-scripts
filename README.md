@@ -295,8 +295,8 @@ time to actually start the subscription.
 
 Then after the subscriber is started you can run:
 
-	./bin/pub publisher
-	./bin/pub publisher hello world
+	./bin/pub producer
+	./bin/pub producer hello world
 
 The first run will error out with a premature connection lost, but this will
 start the JITP for the publisher certificate, and the second time it will
