@@ -12,18 +12,14 @@ You can then switch to the greengrass sample script directory:
 
 	cd aws-iot-jitp-sample-script/greengrass
 	
-Then you will need to install the dependencies
+Then you will need to install the dependencies, for example on Ubunutu/Debian:
 
-	nvm use 11
-	npm i -g aws-cdk
-	npm i 
+	apt get install npm -y
+	apt get install awscli -y
 
-The first step is to deploy the necessary provisioning resource in AWS using
-the AWS CDK:
+To create the Just In Time Provisioning stack you can type
 
-	npm run build
-	cdk bootstrap
-	cdk deploy
+	make jitp
 
 If you do not have a service role associated with your account, you can add
 the role listed in the outputs from the cdk deploy step to your account

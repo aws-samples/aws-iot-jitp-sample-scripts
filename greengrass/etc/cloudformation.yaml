@@ -1,0 +1,296 @@
+# vim: set ts=2 sw=2 et:
+# 
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# 
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT Policies and IAM Roles
+
+Parameters:
+  CodeBucket:
+    Type: String
+  IoTEndpoint:
+    Type: String
+  Username:
+    Type: String
+
+Resources:
+  ProvisioningQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300 
+  ProvisioningTopic:
+    Type: AWS::SNS::Topic
+    Properties: {}
+  ProvisioningSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ProvisioningTopic
+      Endpoint: !GetAtt ProvisioningQueue.Arn
+      Protocol: sqs
+      RawMessageDelivery: True
+  GreengrassConsumerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: "lambda.amazonaws.com"
+      Policies:
+        - PolicyName: GreengrassConsumerRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:PassRole"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "iot:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "greengrass:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "sqs:DeleteMessage"
+                  - "sqs:ChangeMessageVisibility"
+                  - "sqs:ReceiveMessage"
+                  - "sqs:GetQueueAttributes"
+                Resource: !GetAtt ProvisioningQueue.Arn
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                Resource: "*"
+  GreengrassProvisioningFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Role: !GetAtt GreengrassConsumerRole.Arn
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: greengrassProvisioner.zip
+      Environment:
+        Variables:
+          AWS_IOT_ENDPOINT: !Ref IoTEndpoint
+  GreengrassEventMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: True
+      EventSourceArn: !GetAtt ProvisioningQueue.Arn
+      FunctionName: !Ref GreengrassProvisioningFunction
+  GreengrassPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: "iot.amazonaws.com"
+      Policies:
+        - PolicyName: GreengrassConsumerRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sqs:SendMessage"
+                Resource: "*"
+  IoTTopicRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      TopicRulePayload:
+        AwsIotSqlVersion: "2016-03-23"
+        Sql: "SELECT * FROM '$aws/events/thing/+/created'"
+        RuleDisabled: False
+        Actions:
+          - Sqs:
+              QueueUrl: !Ref ProvisioningQueue
+              RoleArn: !GetAtt GreengrassPublisherRole.Arn
+              UseBase64: False
+  GreengrassRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: "greengrass.amazonaws.com"
+      Policies:
+        - PolicyName: GreengrassPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                Resource: 
+                  - "arn:aws:s3:::eu-central-1-greengrass-updates/*"
+                  - "arn:aws:s3:::us-east-1-greengrass-updates/*"
+                  - "arn:aws:s3:::ap-northeast-1-greengrass-updates/*"
+                  - "arn:aws:s3:::us-west-2-greengrass-updates/*"
+                  - "arn:aws:s3:::ap-southeast-2-greengrass-updates/*"
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                Resource: "*" 
+              - Effect: Allow
+                Action:
+                  - "iot:DeleteThingShadow"
+                  - "iot:GetThingShadow"
+                  - "iot:UpdateThingShadow"
+                Resource:
+                  - "arn:aws:iot:*:*:thing/GG_*"
+                  - "arn:aws:iot:*:*:thing/*-gcm"
+                  - "arn:aws:iot:*:*:thing/*-gda"
+                  - "arn:aws:iot:*:*:thing/*-gci"
+              - Effect: Allow
+                Action:
+                  - "iot:DescribeThing"
+                Resource: 
+                  - "arn:aws:iot:*:*:thing/*"
+              - Effect: Allow
+                Action:
+                  - "iot:DescribeCertificate"
+                Resource: 
+                  - "arn:aws:iot:*:*:cert/*"
+              - Effect: Allow
+                Action:
+                  - "greengrass:*"
+                Resource: "*" 
+              - Effect: Allow
+                Action:
+                  - "lambda:GetFunction"
+                  - "lambda:GetFunctionConfiguration"
+                Resource: "*" 
+              - Effect: Allow
+                Action:
+                  - "secretsmanager:GetSecretValue"
+                Resource: 
+                  - "arn:aws:secretsmanager:*:*:secret:greengrass-*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                Resource: 
+                  - "arn:aws:s3:::*Greengrass*"
+                  - "arn:aws:s3:::*GreenGrass*"
+                  - "arn:aws:s3:::*greengrass*"
+                  - "arn:aws:s3:::*Sagemaker*"
+                  - "arn:aws:s3:::*SageMaker*"
+                  - "arn:aws:s3:::*sagemaker*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetBucketLocation"
+                Resource: "*" 
+              - Effect: Allow
+                Action:
+                  - "sagemaker:DescribeTrainingJob"
+                Resource: "arn:aws:sagemaker:*:*:training-job/*"
+  GreengrassProvisioningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: "lambda.amazonaws.com"
+      Policies:
+        - PolicyName: GreengrassProvisioningPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iot:AddThingToThingGroup"
+                  - "iot:AttachPrincipalPolicy"
+                  - "iot:AttachThingPrincipal"
+                  - "iot:CreateCertificateFromCsr"
+                  - "iot:CreatePolicy"
+                  - "iot:CreateThing"
+                  - "iot:DescribeCertificate"
+                  - "iot:DescribeThing"
+                  - "iot:DescribeThingGroup"
+                  - "iot:DescribeThingType"
+                  - "iot:DetachThingPrincipal"
+                  - "iot:GetPolicy"
+                  - "iot:ListPolicyPrincipals"
+                  - "iot:ListPrincipalPolicies"
+                  - "iot:ListPrincipalThings"
+                  - "iot:ListThingGroupsForThing"
+                  - "iot:ListThingPrincipals"
+                  - "iot:RegisterCertificate"
+                  - "iot:RegisterThing"
+                  - "iot:RemoveThingFromThingGroup"
+                  - "iot:UpdateCertificate"
+                  - "iot:UpdateThing"
+                  - "iot:UpdateThingGroupsForThing"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:PutMetricFilter"
+                  - "logs:PutRetentionPolicy"
+                  - "logs:GetLogEvents"
+                  - "logs:DeleteLogStream"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "dynamodb:PutItem"
+                  - "kinesis:PutRecord"
+                  - "iot:Publish"
+                  - "s3:PutObject"
+                  - "sns:Publish"
+                  - "sqs:SendMessage*"
+                  - "cloudwatch:SetAlarmState"
+                  - "cloudwatch:PutMetricData"
+                  - "es:ESHttpPut"
+                  - "firehose:PutRecord"
+                Resource: "*"
+  AutomationServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ssm.amazonaws.com
+            - ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Path: "/"
+      RoleName: AutomationServiceRole
+  IotAdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              - !Sub "arn:aws:iam::${AWS::AccountId}:user/${Username}"
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSGreengrassFullAccess 
+        - arn:aws:iam::aws:policy/AWSIoTFullAccess
+      Path: "/"
+      RoleName: IoTAdmin
