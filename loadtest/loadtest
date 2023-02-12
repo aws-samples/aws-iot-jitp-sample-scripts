@@ -160,7 +160,7 @@ else if (process.argv.includes('-loadtest')) {
 	var pubs =  ( process.argv.includes('-publishers')) ?
 		process.argv[ process.argv.indexOf('-publishers') + 1 ]*1 :
 		process.env['PUBLISHERS']*1 || 1
-	loadtest(pubs,subs)
+	loadtest(subs,pubs)
 }
 
 else {
