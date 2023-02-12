@@ -468,12 +468,12 @@ to use:
 
 Then you can setup a loadtest with a number of device certificates by typing:
 
-	./loadtest -setup -subscribers 3 -producers 10
+	./loadtest -setup -subscribers 3 -publshers 10
 
 This will create 3 subscriber certificates and 10 producer certificates.  After
 this we can run the loadtest with those values:
 
-	./loadtest -loadtest -subscribers 3 -producers 10
+	./loadtest -loadtest -subscribers 3 -publshers 10
 
 This will start up all 13 subprocesses which will start sending messages 
 immediately.  If you have configured the Amazon SQS queue as above
