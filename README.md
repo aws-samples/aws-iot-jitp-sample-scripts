@@ -266,7 +266,7 @@ Connect your device
 To connect your device to AWS IoT, you can first discover your ATS endpoint
 using the command:
 
-	aws iot describe-endpoint --type iot:Data-ATS
+	aws iot describe-endpoint --endpoint-type iot:Data-ATS
 
 This will return the URL for the AWS IoT endpoint using the above ATS root
 certificates.  Supplied in the repo are a bin/pub and a bin/sub which 
