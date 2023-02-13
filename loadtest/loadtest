@@ -30,6 +30,7 @@ const run = function (cmd,...args) {
 
 const run_async = function(cmd,...args) {
 	if(verbose) {
+// verbose option also needs to be passed down to spawned processes		
 		args.push('-v');
 	}
 	var child = spawn(cmd,args)
