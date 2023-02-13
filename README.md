@@ -281,7 +281,7 @@ that only one device may use a given certificate at a time.
 
 To try these out first create two new device certificates:
 
-	./bin/provision producer
+	./bin/provision publisher
 	./bin/provision subscriber
 
 This will create a .key and a .crt file for each in the current working
