@@ -29,6 +29,9 @@ const run = function (cmd,...args) {
 }
 
 const run_async = function(cmd,...args) {
+	if(verbose) {
+		args.push('-v');
+	}
 	var child = spawn(cmd,args)
 	child.stderr.on('data', (data) => {
 		console.log(data.toString())
