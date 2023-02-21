@@ -29,6 +29,9 @@ const run = function (cmd,...args) {
 }
 
 const run_async = function(cmd,...args) {
+	if(verbose){
+		args.push('-v');
+	}
 	var child = spawn(cmd,args)
 	child.stderr.on('data', (data) => {
 		console.log(data.toString())
@@ -72,9 +75,9 @@ const subscriber = function(dev) {
 	if (verbose) console.log('Connecting as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
 
 	var device = aws.device({
-		keyPath: 'certs/' + dev+ '.key',
-		certPath: 'certs/' + dev+ '.crt',
-		caPath: 'aws.root.cert',
+		keyPath: process.env["CWD"] + '/certs/' + dev+ '.key',
+		certPath: process.env["CWD"] + '/certs/' + dev+ '.crt',
+		caPath: process.env["CWD"] + '/AmazonRootCA1.pem',
 		clientId: dev,
 		host: process.env['AWS_IOT_ENDPOINT']
 	})
@@ -97,9 +100,9 @@ const subscriber = function(dev) {
 const publisher = function(dev) {
 	if (verbose) console.log('Connecting as', dev, 'to', process.env['AWS_IOT_ENDPOINT'])
 	var device = aws.device({
-		keyPath: 'certs/' + dev+ '.key',
-		certPath: 'certs/' + dev+ '.crt',
-		caPath: 'aws.root.cert',
+		keyPath: process.env["CWD"] + '/certs/' + dev+ '.key',
+		certPath: process.env["CWD"] + '/certs/' + dev+ '.crt',
+		caPath: process.env["CWD"] + '/AmazonRootCA1.pem',
 		clientId: dev,
 		host: process.env['AWS_IOT_ENDPOINT']
 	})
@@ -160,7 +163,7 @@ else if (process.argv.includes('-loadtest')) {
 	var pubs =  ( process.argv.includes('-publishers')) ?
 		process.argv[ process.argv.indexOf('-publishers') + 1 ]*1 :
 		process.env['PUBLISHERS']*1 || 1
-	loadtest(pubs,subs)
+	loadtest(subs,pubs)
 }
 
 else {

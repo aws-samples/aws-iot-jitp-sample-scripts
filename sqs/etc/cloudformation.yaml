@@ -14,7 +14,7 @@ Resources:
   SQSQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "${ TopicName }Queue"
+      QueueName: !Sub "${TopicName}Queue"
 
   SQSQueueLambdaRole:
     Type: AWS::IAM::Role
@@ -30,7 +30,7 @@ Resources:
             Action: "sts:AssumeRole"
       Policies:
         -
-          PolicyName: !Sub "${ TopicName }RecipientPolicy"
+          PolicyName: !Sub "${TopicName}RecipientPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -62,7 +62,7 @@ Resources:
             Action: "sts:AssumeRole"
       Policies:
         -
-          PolicyName: !Sub "${ TopicName }PublisherPolicy"
+          PolicyName: !Sub "${TopicName}PublisherPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -76,11 +76,11 @@ Resources:
   IoTSQSPublishRule:
     Type: AWS::IoT::TopicRule
     Properties:
-      RuleName: !Sub "${ TopicName }SQSPublisher"
+      RuleName: !Sub "${TopicName}SQSPublisher"
       TopicRulePayload:
         AwsIotSqlVersion: "2016-03-23"
         RuleDisabled: false
-        Sql: !Sub "SELECT * FROM '${ TopicName }'" 
+        Sql: !Sub "SELECT * FROM '${TopicName}'" 
         Actions:
           -
             Sqs:
@@ -91,21 +91,20 @@ Resources:
   SQSProcessLambda:
     Type: AWS::Lambda::Function
     Properties:
+      Role: !GetAtt SQSQueueLambdaRole.Arn
       Code:
         ZipFile: |
           'use strict'
           const aws = require('aws-sdk');
           exports.handler = function(event,context) {
-            console.log(JSON.stringify(event));
-          }
-      Role: !GetAtt SQSQueueLambdaRole.Arn
-      MemorySize: 256
+            console.log(JSON.stringify(event)); }      
+      MemorySize: 128
       Handler: index.handler
-      Runtime: nodejs6.10
-      Timeout: 30
+      Runtime: nodejs14.x
+      Timeout: 15
       Environment:
         Variables:
-          TOPIC: !Sub "{ TopicName }"
+          TOPIC: !Sub "{TopicName}"
 
   SQSLambdaEventSource:
     Type: AWS::Lambda::EventSourceMapping 

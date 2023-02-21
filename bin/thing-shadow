@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# CopyLeft
+
+
+thingName=$1
+
+if [[ -z "$thingName" ]]; then
+	echo "Usage: $0 thing [message...]"
+	exit
+fi
+
+
+if [ $# -eq 2 ]
+ then
+    shift
+    message="$1"
+    message=$( echo $message | base64 )
+
+aws iot-data update-thing-shadow \
+    --thing-name $thingName \
+    --shadow-name prime-shadow \
+    --payload "$message" \
+    "/dev/null"
+ else
+
+aws iot-data get-thing-shadow \
+    --thing-name $thingName \
+    --shadow-name prime-shadow \
+    "/dev/shm/data.txt" > /dev/null 2>&1
+cat /dev/shm/data.txt | jq
+rm -f /dev/shm/data.txt
+ fi
+
+

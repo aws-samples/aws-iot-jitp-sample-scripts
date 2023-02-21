@@ -3,7 +3,7 @@
 
 include etc/config.mk
 
-AWS_IOT_ENDPOINT=$(shell aws iot describe-endpoint | jq -r '.["endpointAddress"]')
+AWS_IOT_ENDPOINT=$(shell aws iot describe-endpoint --endpoint-type iot:Data-ATS | jq -r '.["endpointAddress"]')
 
 start:
 	AWS_IOT_ENDPOINT=$(AWS_IOT_ENDPOINT) npm start
@@ -11,6 +11,10 @@ start:
 install:
 	npm install .
 	mkdir -p tmp/
-	aws cloudformation package --s3-bucket $(BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.pkg.yaml
-	aws cloudformation deploy --stack-name $(STACK) --template-file tmp/cloudformation.pkg.yaml --capabilities CAPABILITY_NAMED_IAM 
+
+build: install
+	aws cloudformation package --s3-bucket $(AWS_BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.$(AWS_STACK).pkg.yaml
+
+deploy:	build
+	aws cloudformation deploy --stack-name $(AWS_STACK) --template-file tmp/cloudformation.$(AWS_STACK).pkg.yaml --capabilities CAPABILITY_NAMED_IAM 
 

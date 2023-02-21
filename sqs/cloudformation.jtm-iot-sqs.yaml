@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT + SQS w/ multiple consumers
+Parameters:
+  TopicName:
+    Type: String
+Resources:
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName:
+        Fn::Sub: ${ TopicName }Queue
+  SQSQueueLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${ TopicName }RecipientPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - sqs:DeleteMessage
+            - sqs:ChangeMessageVisibility
+            - sqs:ReceiveMessage
+            - sqs:GetQueueAttributes
+            Resource:
+              Fn::GetAtt:
+              - SQSQueue
+              - Arn
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: '*'
+  IoTSQSPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - iot.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${ TopicName }PublisherPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - sqs:SendMessage
+            Resource:
+              Fn::GetAtt:
+              - SQSQueue
+              - Arn
+  IoTSQSPublishRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName:
+        Fn::Sub: ${ TopicName }SQSPublisher
+      TopicRulePayload:
+        AwsIotSqlVersion: '2016-03-23'
+        RuleDisabled: false
+        Sql:
+          Fn::Sub: SELECT * FROM '${ TopicName }'
+        Actions:
+        - Sqs:
+            QueueUrl:
+              Ref: SQSQueue
+            RoleArn:
+              Fn::GetAtt:
+              - IoTSQSPublisherRole
+              - Arn
+            UseBase64: false
+  SQSProcessLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: "'use strict'\nconst aws = require('aws-sdk');\nexports.handler =\
+          \ function(event,context) {\n  console.log(JSON.stringify(event));\n}\n"
+      Role:
+        Fn::GetAtt:
+        - SQSQueueLambdaRole
+        - Arn
+      MemorySize: 256
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 30
+      Environment:
+        Variables:
+          TOPIC:
+            Fn::Sub: '{ TopicName }'
+  SQSLambdaEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      EventSourceArn:
+        Fn::GetAtt:
+        - SQSQueue
+        - Arn
+      FunctionName:
+        Ref: SQSProcessLambda
+Outputs:
+  QueueName:
+    Value:
+      Fn::GetAtt:
+      - SQSQueue
+      - QueueName
+  QueueURL:
+    Value:
+      Ref: SQSQueue
+  QueueARN:
+    Value:
+      Fn::GetAtt:
+      - SQSQueue
+      - Arn

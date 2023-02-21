@@ -8,10 +8,10 @@ include etc/config.mk
 all: deploy
 
 build: 
-	aws cloudformation package --s3-bucket $(AWS_BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.pkg.yaml
+	aws cloudformation package --s3-bucket $(AWS_BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.$(AWS_STACK).pkg.yaml
 
 deploy: build
-	aws cloudformation deploy --stack-name $(AWS_STACK) --template-file tmp/cloudformation.pkg.yaml --capabilities CAPABILITY_NAMED_IAM 
+	aws cloudformation deploy --stack-name $(AWS_STACK) --template-file tmp/cloudformation.$(AWS_STACK).pkg.yaml --capabilities CAPABILITY_NAMED_IAM 
 
 delete:
 	aws cloudformation delete-stack --stack-name $(AWS_STACK)

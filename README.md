@@ -44,6 +44,7 @@ the components of the system fit together:
 	├── create-root		-- creates a custom root CA certificate
 	├── create-thing	-- creates an AWS IoT Thing, Certificate, and Policy
 	├── delete-thing	-- deletes an AWS IoT Thing, Certificate, and Policy
+	├── thing-shadow    -- get or set shadow state
 	├── device-status	-- get the status of the certificate for thedevice
 	├── disable-certificate	-- disable the certificate attached to a device
 	├── enable-certificate	-- enable the certificate attached to a device
@@ -309,6 +310,22 @@ procedure, it is a good idea to have each device under test connect with it
 factory provisioned certificate before shipping to the end customer.  Note
 well that each time the device connects to a new region, this process will
 also occur.
+
+	./bin/thing-shadow <thingName> <message>
+
+This script uses the aws cli and updates the thing shadow named 'prime-shadow'
+preferably the structure of message should be following json, where thing-
+specific-data is a nested json
+
+```yaml
+'{"state":{"reported":"thing-specific-data"}}'
+```
+
+	./bin/thing-shadow <thingName> 
+
+If the same script is invoked without the message or empty message, then the 
+latest updated state is fetched from the shadow 'prime-shadow'.	
+
 
 Amazon SQS and AWS IoT
 ======================
