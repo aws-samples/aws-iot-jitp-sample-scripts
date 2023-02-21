@@ -10,7 +10,7 @@ start:
 
 install:
 	npm install .
-	mkdir -p tmp/
+	mkdir -p {tmp,certs}/
 
 build: install
 	aws cloudformation package --s3-bucket $(AWS_BUCKET) --template-file etc/cloudformation.yaml --output-template-file tmp/cloudformation.$(AWS_STACK).pkg.yaml

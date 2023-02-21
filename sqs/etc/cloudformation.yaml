@@ -95,9 +95,13 @@ Resources:
       Code:
         ZipFile: |
           'use strict'
-          const aws = require('aws-sdk');
           exports.handler = function(event,context) {
+<<<<<<< HEAD:sqs/etc/cloudformation.yaml
             console.log(JSON.stringify(event)); }      
+=======
+            console.log(JSON.stringify(event)); }
+      Role: !GetAtt SQSQueueLambdaRole.Arn
+>>>>>>> 6ed4680fd0815569c1b2bafef3fc46a7c90cd591:sqs/cloudformation.yaml
       MemorySize: 128
       Handler: index.handler
       Runtime: nodejs14.x

@@ -267,7 +267,7 @@ Connect your device
 To connect your device to AWS IoT, you can first discover your ATS endpoint
 using the command:
 
-	aws iot describe-endpoint --type iot:Data-ATS
+	aws iot describe-endpoint --endpoint-type iot:Data-ATS
 
 This will return the URL for the AWS IoT endpoint using the above ATS root
 certificates.  Supplied in the repo are a bin/pub and a bin/sub which 
@@ -282,7 +282,7 @@ that only one device may use a given certificate at a time.
 
 To try these out first create two new device certificates:
 
-	./bin/provision producer
+	./bin/provision publisher
 	./bin/provision subscriber
 
 This will create a .key and a .crt file for each in the current working
@@ -485,12 +485,12 @@ to use:
 
 Then you can setup a loadtest with a number of device certificates by typing:
 
-	./loadtest -setup -subscribers 3 -producers 10
+	./loadtest -setup -subscribers 3 -publshers 10
 
 This will create 3 subscriber certificates and 10 producer certificates.  After
 this we can run the loadtest with those values:
 
-	./loadtest -loadtest -subscribers 3 -producers 10
+	./loadtest -loadtest -subscribers 3 -publshers 10
 
 This will start up all 13 subprocesses which will start sending messages 
 immediately.  If you have configured the Amazon SQS queue as above
