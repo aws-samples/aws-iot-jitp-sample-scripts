@@ -5,3 +5,6 @@
 *.pem
 *.srl
 **.DS_Store
+node_modules/
+**.tmp
+config.mk

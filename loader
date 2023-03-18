@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# CopyLeft
+
+# Nothing fancy here
+# Just takes the iot thing name as parameter and creates arbitrary random values to update the shadow
+# sleeping 5 second in between
+
+thingName=$1
+
+if [[ -z "$thingName" ]]; then
+	echo "Usage: $0 thing [ delay numtimes ]"
+	exit
+fi
+
+
+delay=$2
+
+if [[ -z "$delay" ]]; then 
+  delay=1
+fi
+
+count=$3
+
+if [[ -z "$count" ]]; then 
+  count=30
+fi
+
+echo "Sending random updates to $thingName/prime-shadow for $count times with $delay seconds wait in between"
+echo ""
+ 
+ while true;
+  do 
+    m=$(( ( RANDOM % 60 )  + 10 ))
+    message="{\"state\":{\"reported\":{\"moisture\":$m}}}"
+
+    echo "$message" | jq
+
+    ./bin/thing-shadow $thingName "$message"
+
+    count=$(( $count - 1 )) 
+
+    if [[ "$count" -eq "0" ]] ; then
+      exit;
+    fi
+
+    sleep $delay 
+done

@@ -3,13 +3,14 @@
 	"version": "1.0.0",
 	"description": "load test publisher and subscriber for AWS IoT JITP",
 	"dependencies": {
-		"aws-iot-device-sdk":">=2.2.1"
+		"aws-iot-device-sdk": ">=2.2.1"
 	},
 	"scripts": {
-		"start" : "./loadtest -loadtest"
+		"start": "./loadtest -loadtest"
 	},
 	"license": "MIT",
-	"author": { 
-		"name" : "David Goehrig", "email" : "goehd@amazon.lu"
+	"author": {
+		"name": "David Goehrig",
+		"email": "goehd@amazon.lu"
 	}
 }
